@@ -51,31 +51,60 @@ var part1 = function() {
 
 var part2 = function () {
 
-  for (var i = 0; i < input.length; i++) {
-    var numbers = input[i].split(/\s+/)
-    var mass = $.map(numbers, (val => {return Number(val)}))
+  var desiredOutput = 19690720
 
-    var fuel = []
-    for (var m = 0; m < mass.length; m++) {
-      fuel[m] = 0
-      var next = mass[m]
-      while (next > 0) {
-        var curFu = Math.floor(next / 3) - 2
-        if (curFu > 0) {
-          fuel[m] += curFu
+  for (var i = 5; i < input.length; i++) {
+    var numbers = input[i].split(/\,+/)
+
+    var noun = 0
+    var verb = 0
+    var pos0 = 0
+    for (var n = 0; n <= 99; n++) {
+      noun = n
+      for (var v = 0; v <= 99; v++) {
+        verb = v
+
+        var ints = $.map(numbers, (val => {return Number(val)}))
+        ints[1] = noun
+        ints[2] = verb
+
+        var pc = 0
+        while (pc >= 0) {
+          var op = ints[pc]
+          if (op === 1) { // sum
+            var apos = ints[pc+1]
+            var bpos = ints[pc+2]
+            var cpos = ints[pc+3]
+            ints[cpos] = ints[apos] + ints[bpos]
+          } else if (op === 2) { // multiply
+            var apos = ints[pc+1]
+            var bpos = ints[pc+2]
+            var cpos = ints[pc+3]
+            ints[cpos] = ints[apos] * ints[bpos]
+          } else if (op === 99) { // HALT
+            pc = -999
+          } else {
+            console.log('exception exception exception')
+          }
+          pc += 4
         }
-        next = curFu
+
+        pos0 = ints[0]
+
+        if (pos0 === desiredOutput) {
+          break;
+        }
       }
-      // console.log(fuel[m])
+      if (pos0 === desiredOutput) {
+        break;
+      }
     }
 
-    var fuelSum = fuel.reduce((acc, val) => {
-      return acc + val
-    }, 0)
-    // console.log(fuelSum)
+    var answer = 100 * noun + verb
+    console.log(noun, verb)
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append(fuelSum)
+      .append(answer)
       .append('<br>')
   }
 
