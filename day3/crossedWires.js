@@ -65,11 +65,88 @@ var part2 = function () {
 
 
   for (var i = 0; i < input.length; i++) {
+    var wires = input[i].split(/\s+/)
 
-    var answer = 100
+    var grid = []
+    grid[0] = []
+    grid[0][0] = 'O'
+
+    for (var w = 0; w < wires.length; w++) {
+      var curx = 0
+      var cury = 0
+      var positions = wires[w].split(/\,/)
+      // console.log(positions)
+      $.each(positions, (idx, pos) => {
+        var dir = pos.substr(0,1)
+        var steps = Number(pos.substr(1))
+        while (steps-- > 0) {
+          switch (dir) {
+            case 'U': cury++;break;
+            case 'R': curx++;break;
+            case 'D': cury--;break;
+            case 'L': curx--;break;
+            default: break;
+          }
+          if (grid[curx] === undefined) {
+            grid[curx] = []
+          }
+          if (grid[curx][cury] === undefined) {
+            grid[curx][cury] = ''+w
+          } else if (grid[curx][cury] !== ''+w && grid[curx][cury] !== 'O') {
+            grid[curx][cury] = 'X'
+          }
+        }
+      })
+    }
+    // console.log(grid)
+    // console.log(printGrid(grid))
+
+    var wireSteps = [0,0]
+    var crossings = {}
+
+    for (var w = 0; w < wires.length; w++) {
+      var curx = 0
+      var cury = 0
+      var positions = wires[w].split(/\,/)
+      // console.log(positions)
+      $.each(positions, (idx, pos) => {
+        var dir = pos.substr(0,1)
+        var steps = Number(pos.substr(1))
+        while (steps-- > 0) {
+          switch (dir) {
+            case 'U': cury++;break;
+            case 'R': curx++;break;
+            case 'D': cury--;break;
+            case 'L': curx--;break;
+            default: break;
+          }
+          wireSteps[w]++
+          if (grid[curx][cury] === 'X') {
+            var cross = curx+','+cury
+            if (crossings[cross] === undefined) {
+              crossings[cross] = []
+            }
+            if (crossings[cross][w] === undefined) {
+              crossings[cross][w] = wireSteps[w]
+            }
+          }
+        }
+      })
+    }
+
+    // console.log(crossings)
+
+    var shortestSteps = Number.MAX_SAFE_INTEGER
+    $.each(Object.keys(crossings), (idx, key) => {
+      var stepSum = crossings[key][0] + crossings[key][1]
+      if (shortestSteps > stepSum) {
+        shortestSteps = stepSum
+      }
+    })
+
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append(answer)
+      .append(shortestSteps)
       .append('<br>')
   }
 

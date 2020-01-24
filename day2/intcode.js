@@ -101,7 +101,7 @@ var part2 = function () {
     }
 
     var answer = 100 * noun + verb
-    console.log(noun, verb)
+    // console.log(noun, verb)
     $('#part2').append(input[i])
       .append('<br>&emsp;')
       .append(answer)
