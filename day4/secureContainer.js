@@ -1,6 +1,8 @@
 var input = [
 `111111-111111`,
-`111111-123789`
+`111111-123789`,
+`111111-111122`,
+`123444-123444`
   ,puzzleInput
 ]
 
@@ -44,16 +46,41 @@ var part2 = function () {
 
 
   for (var i = 0; i < input.length; i++) {
-    var wires = input[i].split(/\s+/)
+    var range = input[i].split(/\-+/)
+    var start = Number(range[0])
+    var end = Number(range[1])
+    var validPasswords = 0
 
-    var shortestSteps = Number.MAX_SAFE_INTEGER
+    for (var p = start; p <= end; p++) {
+      if (checkPass2(p)) {
+        validPasswords++
+      }
+    }
 
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append(shortestSteps)
+      .append(validPasswords)
       .append('<br>')
   }
+}
 
+
+var checkPass2 = function(pass) {
+  var parr = $.map((pass+'').split(''), (val) => { return Number(val) })
+  var crescent = true
+  var doubleCounter = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  doubleCounter[parr[0]]++
+  for (var d = 0; d < parr.length-1; d++) {
+    crescent = crescent && (parr[d] <= parr[d+1])
+    doubleCounter[parr[d+1]]++
+  }
+  var double = doubleCounter.reduce((acc, val) => {
+    return acc || (val === 2)
+  }, false)
+
+  return parr.length === 6
+    &&  double
+    && crescent
 }
 
 
