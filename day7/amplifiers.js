@@ -72,11 +72,12 @@ var Computer = function () {
       this.ints[c] = (amode === 0 ? this.ints[a] : a) === (bmode === 0 ? this.ints[b] : b) ? 1 : 0
       this.pc += 4
     } else if (op === 99) { // HALT
-      this.pc = -999
-      halted = true
+      // this.pc = -999
+      // this.pc += 1
+      this.halted = true
     } else {
       console.log('exception exception exception')
-      halted = true
+      this.halted = true
     }
   }
   this.processInput = function(val) {
@@ -98,7 +99,6 @@ var part1 = function() {
 
   for (var i = 0; i < input.length; i++) {
     var numbers = input[i].split(/\,+/)
-    var ints
 
     var permutations = []
 
@@ -132,19 +132,19 @@ var part1 = function() {
 
       var phases = $.map(permutations.shift().split(','), (val => {return Number(val)})) //[1,0,4,3,2]
       var outSignals = [0]
-      var intInputs = []
+      var inSignals = []
 
       while (phases.length > 0) {
         var com = new Computer()
         com.ints = $.map(numbers, (val => {return Number(val)})) // re read the program
         // prepare both inputs
-        intInputs.push(phases.shift())
-        intInputs.push(outSignals.shift())
+        inSignals.push(phases.shift())
+        inSignals.push(outSignals.shift())
 
         while (!com.halted && !com.outputReady) {
           com.execute()
           if (com.waitingInput) {
-            com.processInput(intInputs.shift())
+            com.processInput(inSignals.shift())
           }
         }
         if (com.outputReady) {
@@ -170,10 +170,8 @@ var part2 = function () {
 
   for (var i = 0; i < input2.length; i++) {
     var numbers = input2[i].split(/\,+/)
-    var ints
 
     var permutations = []
-
     //Generating permutation using Heap Algorithm
     var heapPermutation = function(array, size) {
       if (size == 1) { // finish
@@ -202,92 +200,50 @@ var part2 = function () {
 
     while (permutations.length > 0) {
 
-      var phases = $.map(permutations.shift().split(','), (val => {return Number(val)})) //[1,0,4,3,2]
-      var signals = [0]
-      var intInputs = []
+      var phases = $.map(permutations.shift().split(','), (val => {return Number(val)}))
+      var outSignals = [0]
+      var inSignals = []
+      var coms = []
+      for (var ph = 0; ph < phases.length; ph++) {
+        coms[ph] = new Computer()
+        coms[ph].ints = $.map(numbers, (val => {return Number(val)}))
+      }
+      var c = 0 // current computer
 
-      while (signals.length > 0) {
-        ints = $.map(numbers, (val => {return Number(val)})) // re read the program
+      var lastOutSignal = undefined
+      while (!coms[4].halted) { // until Amp E (4) halts
+
         // prepare both inputs
-        var nextPhase = phases.shift()
-        intInputs.push(nextPhase)
-        phases.push(nextPhase) // reinsert
-        intInputs.push(signals.shift())
+        if (phases.length > 0) {
+          inSignals.push(phases.shift())
+        }
 
-        //TODO: Refactor and extract to class
-        // we need to maintain the state (pc) between executions
-        var pc = 0
-        while (pc >= 0) {
-          var fullop = ints[pc]
-          var op = fullop % 100
-          var amode = Math.floor((fullop / 100) % 10);
-          var bmode = Math.floor((fullop / 1000) % 10);
-          var cmode = Math.floor((fullop / 10000) % 10);
+        if (outSignals.length > 0) {
+          lastOutSignal = outSignals.shift()
+          inSignals.push(lastOutSignal)
+        } // else: the previous has halted
 
-          if (op === 1) { // sum
-            var a = ints[pc+1]
-            var b = ints[pc+2]
-            var c = ints[pc+3]
-            ints[c] = (amode === 0 ? ints[a] : a) + (bmode === 0 ? ints[b] : b)
-            pc += 4
-          } else if (op === 2) { // multiply
-            var a = ints[pc+1]
-            var b = ints[pc+2]
-            var c = ints[pc+3]
-            ints[c] = (amode === 0 ? ints[a] : a) * (bmode === 0 ? ints[b] : b)
-            pc += 4
-          } else if (op === 3) { // input
-            var a = ints[pc+1]
-            ints[a] = intInputs.shift()
-            pc += 2
-          } else if (op === 4) { // output
-            var a = ints[pc+1]
-            var intOut = (amode === 0 ? ints[a] : a)
-            // console.log(intOut)
-            signals.push(intOut)
-            pc += 2
-          } else if (op === 5) { // jump-if-true
-            var a = ints[pc+1]
-            var b = ints[pc+2]
-            if ((amode === 0 ? ints[a] : a) !== 0) {
-              pc = (bmode === 0 ? ints[b] : b)
-            } else {
-              pc += 3
-            }
-          } else if (op === 6) { // jump-if-false
-            var a = ints[pc+1]
-            var b = ints[pc+2]
-            if ((amode === 0 ? ints[a] : a) === 0) {
-              pc = (bmode === 0 ? ints[b] : b)
-            } else {
-              pc += 3
-            }
-          } else if (op === 7) { // less-than
-            var a = ints[pc+1]
-            var b = ints[pc+2]
-            var c = ints[pc+3]
-            ints[c] = (amode === 0 ? ints[a] : a) < (bmode === 0 ? ints[b] : b) ? 1 : 0
-            pc += 4
-          } else if (op === 8) { // equals
-            var a = ints[pc+1]
-            var b = ints[pc+2]
-            var c = ints[pc+3]
-            ints[c] = (amode === 0 ? ints[a] : a) === (bmode === 0 ? ints[b] : b) ? 1 : 0
-            pc += 4
-          } else if (op === 99) { // HALT
-            pc = -999
-          } else {
-            console.log('exception exception exception')
-            break;
+        // execute
+        while (!coms[c].halted && !coms[c].outputReady) {
+          coms[c].execute()
+          if (coms[c].waitingInput) {
+            coms[c].processInput(inSignals.shift())
           }
         }
-      }
+        if (coms[c].outputReady) {
+          outSignals.push(coms[c].readOutput())
+        } // else: it's a halt
 
-      var amplifiedSignal = signals.shift()
+        // next Amp continues execution
+        c = (c + 1) % 5
+      } // phases
+
+      var amplifiedSignal = lastOutSignal
       if (maxSignal < amplifiedSignal) {
         maxSignal = amplifiedSignal
       }
-    }
+
+    } // permutations
 
     $('#part2').append(input2[i])
       .append('<br>&emsp;')
@@ -302,6 +258,6 @@ $(function (){
   $('#main').append('<div id="part1"><h2>part 1</h2></div>')
   part1()
   $('#main').append('<br><div id="part2"><h2>part 2</h2></div>')
-  // part2()
+  part2()
   $('#main').append('<br>')
 })
