@@ -3,6 +3,11 @@ var input = [
   ,puzzleInput
 ]
 
+var input2 = [
+`0222112222120000`
+  ,puzzleInput
+]
+
 var part1 = function() {
 
   for (var i = 0; i < input.length; i++) {
@@ -57,15 +62,48 @@ var part1 = function() {
 
 var part2 = function () {
 
+  for (var i = 0; i < input2.length; i++) {
+    var arrInput = input2[i].split('')
 
-  for (var i = 0; i < input.length; i++) {
-    var orbitsInput = input[i].split(/\s+/)
+    var width = i === 0 ? 2 : 25
+    var height = i === 0 ? 2 : 6
 
-    var shortestPath = 3
+    var layers = []
+    var l = 0
+    var layerSize = width*height
+    while (arrInput.length > 0) {
+      layers[l] = []
+      for (var px = 0; px < layerSize; px++) {
+        layers[l].push(arrInput.shift())
+      }
+      l++
+    }
+    // console.log(layers)
 
-    $('#part2').append(input[i])
+    // decode image
+    var image = []
+    for (var lr = 0; lr < layers.length; lr++) {
+      for (var px = 0; px < layers[lr].length; px++) {
+        if (layers[lr][px] !== '2' && image[px] === undefined) {
+          image[px] = layers[lr][px] === '0' ? '_' : '#'
+        }
+      }
+    }
+    // console.log(image)
+
+    var result = ''
+    // print image
+    for (var px = 0; px < image.length; px++) {
+      result += image[px]
+      if ((px+1) % width === 0) {
+        result += '\n'
+      }
+    }
+    console.log(result)
+
+    $('#part2').append(input2[i])
       .append('<br>&emsp;')
-      .append(shortestPath)
+      .append(result.replace(/\n/g,'<br>&emsp;'))
       .append('<br>')
   }
 }
