@@ -99,7 +99,7 @@ var part2 = function () {
         result += '\n'
       }
     }
-    console.log(result)
+    console.log(result) //JYZHF
 
     $('#part2').append(input2[i])
       .append('<br>&emsp;')
