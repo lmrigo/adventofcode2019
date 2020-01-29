@@ -130,7 +130,7 @@ var part1 = function() {
     var limit = 10000
     while (!com.halted && --limit>0) {
       if (com.waitingInput) {
-        com.processInput(1)
+        com.processInput(1) // part 1 input
       }
       if (com.outputReady) {
         outputs.push(com.readOutput())
@@ -152,13 +152,32 @@ var part1 = function() {
 
 var part2 = function () {
 
+  for (var i = 0; i < input.length; i++) {
+    var numbers = input[i].split(/\,+/)
 
-  for (var i = 0; i < input2.length; i++) {
-    var numbers = input2[i].split(/\,+/)
+    var com = new Computer()
+    com.ints = $.map(numbers, (val => {return Number(val)}))
 
-    $('#part2').append(input2[i])
+    var outputs = []
+    var limit = 1000000
+    while (!com.halted && --limit>0) {
+      if (com.waitingInput) {
+        com.processInput(2) // part 2 input
+      }
+      if (com.outputReady) {
+        outputs.push(com.readOutput())
+      }
+      com.execute()
+    }
+    if (limit <= 0) {
+      console.log('limit reached')
+    }
+
+    var keycode = outputs.join(' ')
+
+    $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append()
+      .append(keycode)
       .append('<br>')
   }
 }
