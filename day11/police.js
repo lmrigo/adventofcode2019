@@ -192,11 +192,101 @@ var part1 = function() {
 var part2 = function () {
 
   for (var i = 0; i < input.length; i++) {
-    var lines = input[i].split(/\s+/)
+    var numbers = input[i].split(/\,+/)
+
+    var height = 5000
+    var width = 5000
+    var grid = []
+    for (var y = 0; y < height; y++) {
+      grid[y] = []
+      for (var x = 0; x < width; x++) {
+        grid[y][x] = '.'
+      }
+    }
+    var rx = 2500
+    var ry = 2500
+    var rdir = 'UP'
+
+    var minX = 2500
+    var maxX = 2500
+    var minY = 2500
+    var maxY = 2500
+
+    var com = new Computer()
+    com.ints = $.map(numbers, (val => {return Number(val)}))
+
+    var nextInput = 1
+    var outputs = []
+    var limit = 1000000
+    while (!com.halted && --limit>0) {
+      if (com.waitingInput) {
+        com.processInput(nextInput)
+      }
+      com.execute()
+      if (com.outputReady) {
+        outputs.push(com.readOutput())
+      }
+      if (outputs.length > 1) {
+        var color = outputs.shift()
+        grid[ry][rx] = color
+        var direction = outputs.shift()
+        if (direction === 0) { // turn left
+          switch (rdir) {
+            case 'UP' : rdir = 'LEFT';break;
+            case 'LEFT' : rdir = 'DOWN';break;
+            case 'DOWN' : rdir = 'RIGHT';break;
+            case 'RIGHT' : rdir = 'UP';break;
+          }
+        } else { // turn right
+          switch (rdir) {
+            case 'UP' : rdir = 'RIGHT';break;
+            case 'RIGHT' : rdir = 'DOWN';break;
+            case 'DOWN' : rdir = 'LEFT';break;
+            case 'LEFT' : rdir = 'UP';break;
+          }
+        }
+        switch (rdir) { // walk
+          case 'UP' : {
+            ry--
+            minY = minY < ry ? minY : ry
+            break;
+          }
+          case 'RIGHT' :{
+            rx++
+            maxX = maxX > rx ? maxX : rx
+            break;
+          }
+          case 'DOWN' :{
+            ry++
+            maxY = maxY > ry ? maxY : ry
+            break;
+          }
+          case 'LEFT' :{
+            rx--
+            minX = minX < rx ? minX : rx
+            break;
+          }
+        }
+        nextInput = grid[ry][rx] === 1 ? 1 : 0
+      }
+    }
+    if (limit <= 0) {
+      console.log('limit reached')
+    }
+
+    var result = ''
+    for (var y = minY; y <= maxY; y++) {
+      for (var x = minX; x <= maxX; x++) {
+        result += grid[y][x] === 1 ? '#' : '_'
+      }
+      result += '\n'
+    }
+
+    console.log(result) //JFBERBUH
 
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append()
+      .append(result.replace(/\n/g,'<br>&emsp;'))
       .append('<br>')
   }
 }
