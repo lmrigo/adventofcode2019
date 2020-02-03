@@ -116,8 +116,8 @@ var part1 = function() {
   for (var i = 0; i < input.length; i++) {
     var numbers = input[i].split(/\,+/)
 
-    var height = 500
-    var width = 500
+    var height = 40
+    var width = 40
     var grid = []
     for (var y = 0; y < height; y++) {
       grid[y] = []
@@ -186,12 +186,91 @@ var part1 = function() {
 var part2 = function () {
 
   for (var i = 0; i < input.length; i++) {
+    var numbers = input[i].split(/\,+/)
+    numbers[0] = 2 //part 2
+
+    var height = 25
+    var width = 36
+    var grid = []
+    for (var y = 0; y <= height; y++) {
+      grid[y] = []
+      for (var x = 0; x <= width; x++) {
+        grid[y][x] = '.'
+      }
+    }
+    var minX = 0
+    var maxX = width
+    var minY = 0
+    var maxY = height
+
+    var com = new Computer()
+    com.ints = $.map(numbers, (val => {return Number(val)}))
+
+    var score = 0
+    var ballx = 0
+    var padx = 0
+
+    var nextInput = 0
+    var outputs = []
+    var limit = 1000000
+    while (!com.halted && --limit>0) {
+      if (com.waitingInput) {
+        com.processInput(nextInput)
+      }
+      com.execute()
+      if (com.outputReady) {
+        outputs.push(com.readOutput())
+      }
+      if (outputs.length >= 3) {
+        var x = outputs.shift()
+        var y = outputs.shift()
+        var tileId = outputs.shift()
+        if (x === -1 && y === 0) {
+          score = tileId
+        } else {
+          switch (tileId) {
+            case 0 : grid[y][x] = '.';break; // empty
+            case 1 : grid[y][x] = '|';break; // wall
+            case 2 : grid[y][x] = '#';break; // block
+            case 3 : grid[y][x] = '_';padx = x;break; // horizontal paddle
+            case 4 : grid[y][x] = 'O';ballx = x;break; // ball
+          }
+          if (ballx < padx) {
+            nextInput = -1 // left
+          } else if (ballx > padx) {
+            nextInput = 1 // right
+          } else {
+            nextInput = 0 // neutral
+          }
+          minX = minX < x ? minX : x
+          maxX = maxX > x ? maxX : x
+          minY = minY < y ? minY : y
+          maxY = maxY > y ? maxY : y
+        }
+      }
+    }
+    if (limit <= 0) {
+      console.log('limit reached')
+    }
+
+    printGrid(grid,minX,maxX,minY,maxY)
 
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append()
+      .append(score)
       .append('<br>')
   }
+}
+
+var printGrid = function(grid, minX, maxX, minY, maxY) {
+  var str = ''
+  for (var y = minY; y <= maxY; y++) {
+    for (var x = minX; x <= maxX; x++) {
+      str += grid[y][x] === undefined ? '.' : grid[y][x]
+    }
+    str += '\n'
+  }
+  console.log(str)
 }
 
 $(function (){
