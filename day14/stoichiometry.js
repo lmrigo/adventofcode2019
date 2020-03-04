@@ -164,7 +164,7 @@ var part1 = function() {
         reactQ.push(cur)
       }
     }
-    console.log(stock)
+    // console.log(stock)
 
     var result = initOre - stock['ORE']
 
@@ -175,33 +175,302 @@ var part1 = function() {
   }
 }
 
-/*
-var calcOre = function (node) {
-  if (node.children.length === 0) { // default
-    if (node.in.length > 1) {
-      console.log ('isso nao ta certo', node.in)
-    } else {
-      // should be ORE
-      return node.in[0].num
-    }
-  } else { // children
-    var sum = 0
-    $.each(node.children, (idx, child) => {
-      sum += calcOre(child)
-    })
-    return sum
-  }
-}
-*/
-
 var part2 = function () {
 
-  for (var i = 0; i < input.length; i++) {
-    var moonStr = input[i].split(/\n+/)
+  for (var i = 5; i < input.length; i++) {
+    var reactionsStr = input[i].split(/\n+/)
+
+    var reactions = []
+    $.each(reactionsStr, (idx, val) => {
+      var inArr = val.split(/\,\s|\s/)
+      // 7 A, 1 B => 1 C
+      //["7", "A", "1", "B", "=>", "1", "C"]
+      //  0    1    2    3    4     5    6
+      var react = {id:idx, in:[], out:undefined}
+      for (var a = 0; a < inArr.length; a++) {
+        if (inArr[a] === '=>') {
+          react.out = {num:Number(inArr[++a]), chem:inArr[++a]}
+        } else {
+          var num = Number(inArr[a++])
+          var chem = inArr[a]
+          react.in.push({num:num, chem:chem})
+        }
+      }
+      reactions.push(react)
+    })
+    // console.log(reactions)
+
+    var fuelReact = reactions.find((el) => {
+      return el.out.chem === 'FUEL'
+    })
+
+    var stock = {}
+    var outProxy = {}
+    outProxy[fuelReact.out.chem] = fuelReact
+
+    // root
+    var reactTree = {
+      name: fuelReact.out.chem,
+      out: fuelReact.out,
+      in: fuelReact.in,
+      parent: null,
+      children: []
+    }
+
+    // node queue to add to tree
+    var nodesToAdd = [reactTree]
+    // while there are nodes to read
+    while (nodesToAdd.length > 0) {
+      var currNode = nodesToAdd.shift()
+      stock[currNode.name] = 0
+      // read nodes and remove from input list
+      var childrenToAdd = reactions.filter((react) => {
+        return currNode.in.findIndex((el) => {
+          return el.chem === react.out.chem
+        }) > -1
+      })
+      // add all children to parent and to node queue
+      while (childrenToAdd && childrenToAdd.length > 0) {
+        var react = childrenToAdd.shift()
+        var child = {
+          name: react.out.chem,
+          out: react.out,
+          in: react.in,
+          parent: react.out.chem,
+          children: []
+        }
+        currNode.children.push(child)
+        nodesToAdd.push(child)
+
+        outProxy[react.out.chem] = react
+      }
+    }
+    // console.log(reactTree)
+    // console.log(stock)
+    // console.log(outProxy)
+
+    var trillionOre = 1000000000000
+    var billionOre = 1000000000
+    var millionOre = 1000000
+    var initOre = trillionOre
+    stock['ORE'] = initOre
+
+// copy from chrome console
+// paste and replace ^(\w+):\s(\d+) for stock['\1'] = \2
+
+
+    /* stock after 560 bill limit */
+stock['FUEL'] = 5650230
+stock['ZWZQ'] = 2
+stock['ZPBLH'] = 10
+stock['PQZJP'] = 15
+stock['MFVG'] = 26
+stock['FPRFS'] = 6
+stock['CQJT'] = 3
+stock['LDKTQ'] = 22
+stock['WLWZQ'] = 45
+stock['SGDVW'] = 3
+stock['CTJGD'] = 4
+stock['VJSR'] = 8
+stock['VWXB'] = 5
+stock['MDWCG'] = 6
+stock['PRCSN'] = 1
+stock['BQXZ'] = 34
+stock['KTXJR'] = 16
+stock['NVBN'] = 0
+stock['KZFZG'] = 18
+stock['XDSHP'] = 0
+stock['KLHS'] = 1
+stock['NCRZ'] = 3
+stock['WJTS'] = 0
+stock['DVFD'] = 6
+stock['GWXCF'] = 1
+stock['QXCV'] = 0
+stock['RDMDL'] = 15
+stock['QPHT'] = 0
+stock['VDQL'] = 6
+stock['KVPK'] = 1
+stock['BDGC'] = 0
+stock['BQLJ'] = 3
+stock['DHTNG'] = 1
+stock['QMKT'] = 0
+stock['VNKPF'] = 2
+stock['TNXGD'] = 5
+stock['CWNV'] = 12
+stock['HSXW'] = 0
+stock['MZQZS'] = 19
+stock['TMQLD'] = 2
+stock['KQFPJ'] = 5
+stock['RSKH'] = 0
+stock['LVZF'] = 6
+stock['FLRB'] = 4
+stock['FNXMV'] = 6
+stock['FPKM'] = 0
+stock['FWFR'] = 12
+stock['SZFV'] = 4
+stock['FNCN'] = 1
+stock['TBVRN'] = 0
+stock['TLFQZ'] = 0
+stock['XBCLW'] = 0
+stock['VQXCJ'] = 3
+stock['QHMTL'] = 0
+stock['ORE'] = 129
+
+    var reactQ = []
+    var hasOre = true
+    var limit = 1*1000*1000*1000
+    var zeroedAt = -1
+    while (hasOre && --limit>0) {
+      var cur = reactQ.shift()
+      if (cur === undefined) { // produce more fuel if there's nothing else to produce
+        if (Object.keys(stock).reduce((acc,val)=> {
+          if (val === 'FUEL' || val === 'ORE') {
+            return acc
+          } else {
+            return acc + stock[val]
+          }
+        },0) === 0) {
+          if (stock['ORE'] !== initOre) {
+            zeroedAt = stock['ORE']
+            // console.log('zeroed',stock['ORE'], Object.keys(stock).reduce((acc,val)=> {
+            //   return acc + val + ':' + stock[val] + ','
+            // },''))
+            break;
+          }
+        }
+        cur = fuelReact
+      }
+      // check if has stock for all inputs
+      var missing = []
+      $.each(cur.in, (idx, inchem) => {
+        if (stock[inchem.chem] >= inchem.num) { // has in stock
+          return true // continue
+        } else if (inchem.chem === 'ORE') { // finish when ORE runs out
+          hasOre = false
+          return false // break
+        } else {
+          missing.push(inchem)
+        }
+      })
+      if (!hasOre) {
+        break;
+      }
+      if (missing.length <= 0) { // has all inputs
+        // consume all inputs
+        $.each(cur.in, (idx, inchem) => {
+          stock[inchem.chem] -= inchem.num
+        })
+        // produce output
+        stock[cur.out.chem] += cur.out.num
+      } else { // produce the missing
+        $.each(missing, (idx, miss) => {
+          var missReact = outProxy[miss.chem]
+          if (missReact === undefined) {
+            console.log('error!',miss)
+          }
+          var missIdx = reactQ.findIndex((el) => {
+            return missReact.id === el.id
+          })
+          if (missIdx < 0) { // only add if it's not already on queue
+            reactQ.push(missReact)
+          }
+        })
+        // add back the current reaction
+        reactQ.push(cur)
+      }
+    }
+    if (limit <= 0) {
+      console.log('limit reached')
+    }
+    var partialFuel = 0
+    var oreLeft = 0
+    if (zeroedAt > 0) {
+      // I need this many ore to close a cycle
+      var oreToZero = initOre - zeroedAt
+      // with oreToZero ORE I can produce this many fuel
+      var fuelToZero = stock['FUEL']
+      // I can produce this many batches of fuelToZero fuel with 1 trillion ore
+      var batches = Math.floor(trillionOre / oreToZero)
+      partialFuel = batches * fuelToZero
+      // but I still have some ore left, which is the rest of the division:
+      oreLeft = trillionOre % oreToZero
+      // Then I run the program again with the ore left (oreLeft)
+      // and sum partial with whatever is produced with the oreleft
+
+      /* final run with the leftover ore */
+      // reset stock
+      $.each(Object.keys(stock), (idx, val) => {
+        stock[val] = 0
+      })
+      // set ore stock to ore left
+      stock['ORE'] = oreLeft
+      reactQ = []
+      hasOre = true
+      limit = 10000000
+      while (hasOre && --limit>0) {
+        var cur = reactQ.shift()
+        if (cur === undefined) { // produce more fuel if there's nothing else to produce
+          cur = fuelReact
+        }
+        // check if has stock for all inputs
+        var missing = []
+        $.each(cur.in, (idx, inchem) => {
+          if (stock[inchem.chem] >= inchem.num) { // has in stock
+            return true // continue
+          } else if (inchem.chem === 'ORE') { // finish when ORE runs out
+            hasOre = false
+            return false // break
+          } else {
+            missing.push(inchem)
+          }
+        })
+        if (!hasOre) {
+          break;
+        }
+        if (missing.length <= 0) { // has all inputs
+          // consume all inputs
+          $.each(cur.in, (idx, inchem) => {
+            stock[inchem.chem] -= inchem.num
+          })
+          // produce output
+          stock[cur.out.chem] += cur.out.num
+        } else { // produce the missing
+          $.each(missing, (idx, miss) => {
+            var missReact = reactions.find((el) => {
+              return el.out.chem === miss.chem
+            })
+            if (missReact === undefined) {
+              console.log('error!',miss)
+            }
+            var missIdx = reactQ.findIndex((el) => {
+              return missReact.id === el.id
+            })
+            if (missIdx < 0) { // only add if it's not already on queue
+              reactQ.push(missReact)
+            }
+          })
+          // add back the current reaction
+          reactQ.push(cur)
+        }
+      }
+      if (limit <= 0) {
+        console.log('second limit reached')
+      }
+      /* done */
+
+    } else {
+      console.log('you might need more ore!')
+    }
+    // console.log(stock)
+
+
+    console.log(stock)
+
+    var result = partialFuel + stock['FUEL']
 
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append()
+      .append(result)
       .append('<br>')
   }
 }
