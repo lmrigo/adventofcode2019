@@ -115,6 +115,8 @@ const SOUTH = 2
 const WEST = 3
 const EAST = 4
 
+var grid = [] // same grid used in part 2
+
 var part1 = function() {
 
   for (var i = 0; i < input.length; i++) {
@@ -122,7 +124,7 @@ var part1 = function() {
 
     var height = 50
     var width = 50
-    var grid = []
+    // var grid = [] // extracted to global
     for (var y = 0; y < height; y++) {
       grid[y] = []
       for (var x = 0; x < width; x++) {
@@ -313,6 +315,93 @@ var part1 = function() {
   }
 }
 
+var part2 = function () {
+
+  for (var i = 0; i < input.length; i++) {
+
+    var ox = -1
+    var oy = -1
+    var height = grid.length
+    var width = grid[0].length
+    var foundO = false
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        if (grid[y][x] === 'O') {
+          ox = x
+          oy = y
+          foundO = true
+          break
+        }
+      }
+      if (foundO) {
+        break
+      }
+    }
+
+    var longestSteps = -1
+
+    var initialState = {x:ox,y:oy,history:ox+','+oy,steps:0}
+    var nextStates = [initialState]
+    var timeout = 1*1*1000
+    while (nextStates.length > 0 && --timeout) {
+      var st = nextStates.shift()
+      if (longestSteps < st.steps) {
+        longestSteps = st.steps
+      }
+      // genstates
+      // north
+      if (st.y-1 >= 0 // within boundary
+        && '.D'.includes(grid[st.y-1][st.x]) // is pathable
+        && !st.history.includes(';'+st.x+','+(st.y-1))) { // new step
+        var northState = cloneState(st)
+        northState.y--
+        northState.history += ';'+northState.x+','+northState.y
+        northState.steps++
+        nextStates.push(northState)
+      }
+      // east
+      if (st.x+1 < width
+        && '.D'.includes(grid[st.y][st.x+1])
+        && !st.history.includes(';'+(st.x+1)+','+st.y)) {
+        var eastState = cloneState(st)
+        eastState.x++
+        eastState.history += ';'+eastState.x+','+eastState.y
+        eastState.steps++
+        nextStates.push(eastState)
+      }
+      // south
+      if (st.y+1 < height
+        && '.D'.includes(grid[st.y+1][st.x])
+        && !st.history.includes(';'+st.x+','+(st.y+1))) {
+        var southState = cloneState(st)
+        southState.y++
+        southState.history += ';'+southState.x+','+southState.y
+        southState.steps++
+        nextStates.push(southState)
+      }
+      // west
+      if (st.x-1 >= 0
+        && '.D'.includes(grid[st.y][st.x-1])
+        && !st.history.includes(';'+(st.x-1)+','+st.y)) {
+        var westState = cloneState(st)
+        westState.x--
+        westState.history += ';'+westState.x+','+westState.y
+        westState.steps++
+        nextStates.push(westState)
+      }
+    }
+    if (timeout <= 0) {
+      console.log('timeout!')
+    }
+
+
+    $('#part2').append(input[i])
+      .append('<br>&emsp;')
+      .append(longestSteps)
+      .append('<br>')
+  }
+}
+
 var cloneState = function(st) {
   var clone = {
     x: st.x,
@@ -321,6 +410,60 @@ var cloneState = function(st) {
     steps: st.steps
   }
   return clone
+}
+
+var calcDirections = function(dir) {
+  var dirs
+  switch(dir) {
+    case NORTH: dirs = {fwd: NORTH, left: WEST, right: EAST};break;
+    case SOUTH: dirs = {fwd: SOUTH, left: EAST, right: WEST};break;
+    case WEST: dirs = {fwd: WEST, left: SOUTH, right: NORTH};break;
+    case EAST: dirs = {fwd: EAST, left: NORTH, right: SOUTH};break;
+  }
+  return dirs
+}
+
+var isSomething = function(grid, robox, roboy, dir, obj) {
+  var objFound = false
+  switch(dir) {
+    case NORTH: objFound = grid[roboy-1][robox]   === obj;break;
+    case SOUTH: objFound = grid[roboy+1][robox]   === obj;break;
+    case WEST:  objFound = grid[roboy][  robox-1] === obj;break;
+    case EAST:  objFound = grid[roboy][  robox+1] === obj;break;
+  }
+  return objFound
+}
+
+var isWall = function(grid, robox, roboy, dir) {
+  return isSomething(grid, robox, roboy, dir, '#')
+}
+
+var isNewPath = function(grid, robox, roboy, dir) {
+  return isSomething(grid, robox, roboy, dir, '_')
+}
+
+var isPath = function(grid, robox, roboy, dir) {
+  return isSomething(grid, robox, roboy, dir, '.')
+}
+
+var printGrid = function(grid, minX, maxX, minY, maxY) {
+  var str = ''
+  for (var y = minY; y <= maxY; y++) {
+    for (var x = minX; x <= maxX; x++) {
+      str += grid[y][x] === undefined ? '_' : grid[y][x]
+    }
+    str += '\n'
+  }
+  console.log(str)
+}
+
+var dirToString = function(dir) {
+  switch(dir) {
+    case NORTH: console.log('N');break;
+    case SOUTH: console.log('S');break;
+    case WEST:  console.log('W');break;
+    case EAST:  console.log('E');break;
+  }
 }
 
 /*
@@ -375,71 +518,6 @@ __________________________________________________
 __________________________________________________
 __________________________________________________
 */
-
-var calcDirections = function(dir) {
-  var dirs
-  switch(dir) {
-    case NORTH: dirs = {fwd: NORTH, left: WEST, right: EAST};break;
-    case SOUTH: dirs = {fwd: SOUTH, left: EAST, right: WEST};break;
-    case WEST: dirs = {fwd: WEST, left: SOUTH, right: NORTH};break;
-    case EAST: dirs = {fwd: EAST, left: NORTH, right: SOUTH};break;
-  }
-  return dirs
-}
-
-var isSomething = function(grid, robox, roboy, dir, obj) {
-  var objFound = false
-  switch(dir) {
-    case NORTH: objFound = grid[roboy-1][robox]   === obj;break;
-    case SOUTH: objFound = grid[roboy+1][robox]   === obj;break;
-    case WEST:  objFound = grid[roboy][  robox-1] === obj;break;
-    case EAST:  objFound = grid[roboy][  robox+1] === obj;break;
-  }
-  return objFound
-}
-
-var isWall = function(grid, robox, roboy, dir) {
-  return isSomething(grid, robox, roboy, dir, '#')
-}
-
-var isNewPath = function(grid, robox, roboy, dir) {
-  return isSomething(grid, robox, roboy, dir, '_')
-}
-
-var isPath = function(grid, robox, roboy, dir) {
-  return isSomething(grid, robox, roboy, dir, '.')
-}
-
-var part2 = function () {
-
-  for (var i = 0; i < input.length; i++) {
-
-    $('#part2').append(input[i])
-      .append('<br>&emsp;')
-      .append()
-      .append('<br>')
-  }
-}
-
-var printGrid = function(grid, minX, maxX, minY, maxY) {
-  var str = ''
-  for (var y = minY; y <= maxY; y++) {
-    for (var x = minX; x <= maxX; x++) {
-      str += grid[y][x] === undefined ? '_' : grid[y][x]
-    }
-    str += '\n'
-  }
-  console.log(str)
-}
-
-var dirToString = function(dir) {
-  switch(dir) {
-    case NORTH: console.log('N');break;
-    case SOUTH: console.log('S');break;
-    case WEST:  console.log('W');break;
-    case EAST:  console.log('E');break;
-  }
-}
 
 $(function (){
   $('#main').append('<div id="part1"><h2>part 1</h2></div>')
