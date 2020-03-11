@@ -6,48 +6,39 @@ var input = [
 puzzleInput
 ]
 
+var patternBase = [0, 1, 0, -1]
+
 var part1 = function() {
 
   for (var i = 0; i < input.length; i++) {
     var numbers = input[i].split('')
     var signal = $.map(numbers, (x) => {return Number(x)})
 
-    var patternBase = [0, 1, 0, -1]
     var phase = 0
 
     var maxPhases = i==0?4:100
 
     while (phase < maxPhases) {
-      var rounds = []
-      var matrix = []
-      for (var r = 0; r < signal.length; r++) {
-        var roundPattern = []
-        var pidx = 0
-        while (roundPattern.length < signal.length+1) {
-          for (var rj=0; rj<=r; rj++) { //tá passando do len maximo
-            roundPattern.push(patternBase[pidx])
-          }
-          pidx = (pidx + 1) % patternBase.length
-        }
-        roundPattern.shift()
-        // console.log(roundPattern)
-        matrix[r] = []
-        for (var n = 0; n < signal.length; n++) {
-          matrix[r][n] = signal[n] * roundPattern[n]
-        }
-      }
-      // console.log(matrix)
+      var rounds = ''
 
       for (var r = 0; r < signal.length; r++) {
-        var roundSum = matrix[rounds.length].reduce((acc,val) => {
-          return acc + val
-        })
-        rounds[rounds.length] = Number((roundSum + '').substr(-1,1))
+        //TODO: refazer os rounds pra calcular signal 10000 vezes concatenado*
+        var skipZeroes = r // the first "r" elements are zeroes
+        var calcLine = 0
+        for (var n = skipZeroes; n < signal.length; n++) {
+          // talvez botar uma condição pra pular r ou r-1 elementos toda vez q acha um 0 no pattern
+          var patElem = getPattern(r,n)
+          if (patElem === 0) { // skip r elements whenever there's a 0
+            n += r
+          } else {
+            calcLine += signal[n] * getPattern(r,n)
+          }
+        }
+        rounds += (calcLine + '').substr(-1,1)
       }
       // console.log(rounds)
 
-      // console.log('new signal', Number(rounds.join('')))
-      signal = rounds
+      signal = rounds.split('')
       phase++
     }
 
@@ -62,24 +53,53 @@ var part1 = function() {
 
 var part2 = function () {
 
-  for (var i = 0; i < input.length; i++) {
+  for (var i = 1; i < input.length-3; i++) {
+    var numbers = input[i].split('')
+    var signal = $.map(numbers, (x) => {return Number(x)})
+
+    var phase = 0
+
+    var maxPhases = i==0?4:100
+
+    while (phase < maxPhases) {
+      var rounds = ''
+
+      for (var r = 0; r < signal.length; r++) {
+        //TODO: refazer os rounds pra calcular signal 10000 vezes concatenado*
+        var skipZeroes = r // the first "r" elements are zeroes
+        var calcLine = 0
+        for (var n = skipZeroes; n < signal.length; n++) {
+          // talvez botar uma condição pra pular r ou r-1 elementos toda vez q acha um 0 no pattern
+          var patElem = getPattern(r,n)
+          if (patElem === 0) { // skip r elements whenever there's a 0
+            n += r
+          } else {
+            calcLine += signal[n] * getPattern(r,n)
+          }
+        }
+        rounds += (calcLine + '').substr(-1,1)
+      }
+      // console.log(rounds)
+
+      signal = rounds.split('')
+      phase++
+    }
+
+    var output = signal.slice(0,8).join('')
 
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append()
+      .append(output)
       .append('<br>')
   }
 }
 
-var printGrid = function(grid, minX, maxX, minY, maxY) {
-  var str = ''
-  for (var y = minY; y <= maxY; y++) {
-    for (var x = minX; x <= maxX; x++) {
-      str += grid[y][x] === undefined ? '_' : grid[y][x]
-    }
-    str += '\n'
-  }
-  console.log(str)
+var getPattern = function(round, idx) {
+  // round + 1 because first(0) round is 1 repetition, second(1) round is 2 repetitions
+  // idx + 1 because requirements tell to skip the first index
+  var div = ((idx+1) / (round+1)) >> 0 // integer division
+  var pidx = div % 4 //patternBase.length
+  return patternBase[pidx]
 }
 
 $(function (){
