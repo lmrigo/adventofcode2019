@@ -132,24 +132,26 @@ var Computer = function () {
   }
 }
 
+var height = 152
+var width = 50
+var grid = []
+for (var y = 0; y < height; y++) {
+  grid[y] = []
+  for (var x = 0; x < width; x++) {
+    grid[y][x] = '_'
+  }
+}
+var minX = 0
+var maxX = width-1
+var minY = 0
+var maxY = height-1
+
 var part1 = function() {
 
   for (var i = 0; i < input.length; i++) {
     var numbers = input[i].split(/\,+/)
 
-    var height = 50
-    var width = 50
-    var grid = []
-    for (var y = 0; y < height; y++) {
-      grid[y] = []
-      for (var x = 0; x < width; x++) {
-        grid[y][x] = '_'
-      }
-    }
-    var minX = 0
-    var maxX = width-1
-    var minY = 0
-    var maxY = height-1
+    // grid extracted to global
     // printGrid(grid, minX, maxX, minY, maxY)
 
     var com = new Computer()
@@ -171,13 +173,14 @@ var part1 = function() {
       }
       if (outputs.length >= 1) {
         var ascii = outputs.shift()
-        if (ascii === 10) {
+        var char = String.fromCharCode(ascii)
+        if (char === '\n') {
           ry++
           rx=0
           //minY = minY < ry ? minY : ry
           maxY = maxY > ry ? maxY : ry
         } else {
-          grid[ry][rx] = String.fromCharCode(ascii)
+          grid[ry][rx] = char
           rx++
           //minX = minX < rx ? minX : rx
           maxX = maxX > rx ? maxX : rx
@@ -206,7 +209,7 @@ var part1 = function() {
       }
     }
 
-    printGrid(grid, minX, maxX, minY, maxY)
+    // printGrid(grid, minX, maxX, minY, maxY)
 
     $('#part1').append(input[i])
       .append('<br>&emsp;')
@@ -218,9 +221,62 @@ var part1 = function() {
 var part2 = function () {
 
   for (var i = 0; i < input.length; i++) {
+    var numbers = input[i].split(/\,+/)
+
+    var com = new Computer()
+    com.ints = $.map(numbers, (val => {return Number(val)}))
+    com.ints[0] = 2 // part 2 specific
+
+    var strToCmd = function (str) {
+      return $.map(str.split(''), (x => {return x.charCodeAt(0)}))
+    }
+    // Functions
+    var funMain = strToCmd('A,B,A,B,A,C,B,C,A,C\n')
+    var funA = strToCmd('R,4,L,10,L,10\n')
+    var funB = strToCmd('L,8,R,12,R,10,R,4\n')
+    var funC = strToCmd('L,8,L,8,R,10,R,4\n')
+    var continuousVideoFeed = strToCmd('n\n')
+
+    var rx = 0
+    var ry = 0
+    var comInput = funMain.concat(funA,funB,funC,continuousVideoFeed)
+    // console.log(comInput)
+    var outputs = []
+    var buffer = ''
+    var lastChar = ''
+    var limit = 10000000
+    while (!com.halted && --limit>0) {
+      if (com.waitingInput) {
+        com.processInput(comInput.shift())
+      }
+      com.execute()
+      if (com.outputReady) {
+        outputs.push(com.readOutput())
+      }
+      if (outputs.length >= 1) {
+        var ascii = outputs.shift()
+        var char = ascii > 255 ? (''+ascii) : String.fromCharCode(ascii)
+        if (char === '\n' && lastChar === '\n') {
+          console.log(buffer)
+          buffer = ''
+        } else {
+          buffer += char
+          lastChar = char
+        }
+      }
+    }
+
+    if (limit <= 0) {
+      console.log('limit reached')
+    }
+
+    var result = buffer
+
+    // printGrid(grid, minX, maxX, minY, maxY)
+
     $('#part2').append(input[i])
       .append('<br>&emsp;')
-      .append()
+      .append(result)
       .append('<br>')
   }
 }
