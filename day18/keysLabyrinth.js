@@ -81,27 +81,7 @@ var part1 = function() {
           var isDoor = nextPos === nextPos.toUpperCase()
           if (isDoor) {
             newHistory += '|'+ nextPos
-            /*
-            // key not in array means already has access to door
-            if (!newState.keys.includes(nextPos.toLowerCase())) {
-              // do nothing?
-            } else { // no access
-              newState = undefined // invalidate state
-            }
-            */
-          }/* else { // is key
-            if (newState.keys.includes(nextPos)) { // new key
-              // remove key from state
-              var keyIdx = newState.keys.findIndex((x)=>{return x===nextPos})
-              newState.keys.splice(keyIdx,1)
-              // newHistory += ';'+nextPos // add key to history
-              //TODO: testar: erase history here to avoid <--><-
-              //newState.history = ''
-              newState.lastKey = nextPos
-            } else { // already has key
-              // do nothing?
-            }
-          }*/
+          }
         }
 
         if (newState && !st.history.includes(newHistory)) { // is new step
@@ -115,6 +95,10 @@ var part1 = function() {
     }
 
     var allKeys = Object.keys(doorKeys).filter((x) => {return x === x.toLowerCase()})
+    allKeys.unshift('@')
+    doorKeys['@'] = {'x':px, 'y':py}
+    // console.log(allKeys)
+
     // the objective is to find distance from each key to the others
     // also need to save the keys required to reach so that later
     // it's possible to rearrange the sequence
@@ -150,12 +134,11 @@ var part1 = function() {
         var initialState = {x:initx, y:inity, history:';'+initx+','+inity, steps:0}
         var nextStates = [initialState]
         var timeout = 1*100*1000
-        var testMap = {}
         while (nextStates.length > 0 && --timeout) {
           var st = nextStates.shift()
-          if (timeout % 10000 === 0) {
-            // console.log('')
-          }
+          // if (timeout % 10000 === 0) {
+          //   console.log('')
+          // }
           var stPos = grid[st.y][st.x]
           if (stPos === destK) { // dest key found
             if (keyDists[sourceK][destK].steps > st.steps) {
@@ -190,97 +173,76 @@ var part1 = function() {
 
       }
     }
+    // keyDists['@']['@'].steps = 0
     console.log(keyDists)
 
     // continuar: fazer todas permutações e calcular menor caminho
-    // todas permutações é muito grande
-
     // depois disso, excluir permutações que não respeitem chave<porta
 
-/*
-
-    var genState = function(st, newx, newy) {
-      var newState
-      var nextPos = grid[newy][newx]
-      var code = nextPos.charCodeAt(0)
-      //             upper alpha (A-Z)             lower alpha (a-z)
-      var isletter = (65 <= code && code <= 90) || (97 <= code && code <= 122)
-      if (nextPos === '.' || isletter) { // is walkable
-        newState = cloneState(st)
-        newState.x = newx
-        newState.y = newy
-        var newHistory = ';'+newState.x+','+newState.y+'|'+newState.lastKey
-        if (isletter) { // is a key or door
-          var isDoor = nextPos === nextPos.toUpperCase()
-          if (isDoor) {
-            // key not in array means already has access to door
-            if (!newState.keys.includes(nextPos.toLowerCase())) {
-              // do nothing?
-            } else { // no access
-              newState = undefined // invalidate state
-            }
-          } else { // is key
-            if (newState.keys.includes(nextPos)) { // new key
-              // remove key from state
-              var keyIdx = newState.keys.findIndex((x)=>{return x===nextPos})
-              newState.keys.splice(keyIdx,1)
-              // newHistory += ';'+nextPos // add key to history
-              //TODO: testar: erase history here to avoid <--><-
-              //newState.history = ''
-              newState.lastKey = nextPos
-            } else { // already has key
-              // do nothing?
-            }
-          }
-        }
-
-        if (newState && !st.history.includes(newHistory)) { // is new step
-          newState.history += newHistory
-          newState.steps++
-        } else {
-          newState = undefined // invalidate state if it doesn't meet the criteria
-        }
+    var genKeyState = function(kst, key) {
+      var newRemainingKeys = kst.remainingKeys.slice()
+      var index = newRemainingKeys.indexOf(key);
+      if (index > -1) {
+        newRemainingKeys.splice(index, 1);
+      }
+      var newState = {
+        key: key,
+        history: kst.history + key + ',',
+        stepSum: kst.stepSum + keyDists[kst.key][key].steps,
+        remainingKeys: newRemainingKeys
       }
       return newState
     }
 
-    var initialState = {x:px, y:py, history:';'+px+','+py+'|', steps:0, keys:allKeys, lastKey:''}
-    var nextStates = [initialState]
-    var timeout = 1*100*1000
-    var poporshift = true // t=shift;f=pop
-    while (nextStates.length > 0 && --timeout) {
-      //TODO: o melhor jeito é fazer os menores caminhos entre todas as keys e a posicao incial
-      var st = poporshift ? nextStates.shift() : nextStates.pop()
-      if (timeout % 10000 === 0) {
-        // poporshift = !poporshift
-      }
-      if (st.keys.length === 0) { // all keys found
-        if (shortestSteps > st.steps) {
-          shortestSteps = st.steps
-          console.log(shortestSteps)
+    var totalSteps = 99999999
+
+    // initial state is the closes to px, py
+    var player = allKeys.shift()
+    allKeys.sort().reverse()
+    var initialState = {key:player, history:';'+player+',', stepSum:0, remainingKeys:allKeys.slice()}
+    var nextKeyStates = [initialState]
+    var timeout = 200*1000*1000
+    while (nextKeyStates.length > 0 && --timeout) {
+      // var kst = nextKeyStates.shift()
+      var kst = nextKeyStates.pop()
+
+      if (kst.remainingKeys.length === 0) { // all permutations ran
+        if (totalSteps > kst.stepSum) {
+          totalSteps = kst.stepSum
+          console.log(kst.stepSum, kst.history)
         }
-      } else { // genstates
+      } else if (kst.stepSum < totalSteps) { // genstates
         var generated = []
 
-        var northState = genState(st, st.x, st.y-1)
-        if (northState) { generated.push(northState) }
-        var southState = genState(st, st.x, st.y+1)
-        if (southState) { generated.push(southState) }
-        var westState = genState(st, st.x-1, st.y)
-        if (westState) { generated.push(westState) }
-        var eastState = genState(st, st.x+1, st.y)
-        if (eastState) { generated.push(eastState) }
+        kst.remainingKeys.sort((a,b)=>{
+          return keyDists[kst.key][b].steps - keyDists[kst.key][a].steps
+        })
+        $.each(kst.remainingKeys, (idx, key) => {
+          var nextKeyState = genKeyState(kst, key)
+          // check if has doors in the way
+          if (keyDists[kst.key][key].doors.length > 0) {
+            // check if the keys to the doors in the way have already been acquired
+            var doorsInTheWay = keyDists[kst.key][key].doors.filter((x)=>{
+              return kst.remainingKeys.includes(x.toLowerCase())
+            })
+            if (doorsInTheWay.length <= 0) {
+              generated.push(nextKeyState)
+            }
+          } else { // no doors in the way
+            generated.push(nextKeyState)
+          }
+        })
 
-        nextStates.push(...generated)
+        nextKeyStates.push(...generated)
       }
     }
     if (timeout <= 0) {
-      console.log('timeout!', nextStates.length)
+      console.log('timeout!', nextKeyStates.length, nextKeyStates[0].remainingKeys)
     }
-*/
+
     // printGrid(grid, minX, maxX, minY, maxY)
 
-    var result = shortestSteps
+    var result = totalSteps
 
     $('#part1').append(input[i].replace(/\n/g,'<br/>'))
       .append('<br>&emsp;')
