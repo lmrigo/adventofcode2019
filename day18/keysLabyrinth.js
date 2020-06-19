@@ -33,7 +33,7 @@ puzzleInput
 
 var part1 = function() {
 
-  for (var i = 3; i < input.length-2; i++) {
+  for (var i = 0; i < input.length-2; i++) {
     var lines = input[i].split(/\n/)
 
     // player coords @
@@ -149,8 +149,8 @@ var part1 = function() {
                 var code = x.charCodeAt(0)
                 return (65 <= code && code <= 90) // upper alpha (A-Z)
               })
-              keyDists[sourceK][destK].doors = doors
-              keyDists[destK][sourceK].doors = doors
+              keyDists[sourceK][destK].doors = doors.filter((x)=>{return x !== sourceK.toUpperCase()})
+              keyDists[destK][sourceK].doors = doors.filter((x)=>{return x !== destK.toUpperCase()})
             }
           } else { // genstates
             var generated = []
@@ -175,49 +175,87 @@ var part1 = function() {
     }
     // keyDists['@']['@'].steps = 0
     console.log(keyDists)
+    var str = '{'
+    $.each(Object.keys(keyDists), (idx,val)=>{
+      if (idx>0) {
+        str += ','
+      }
+      str += '"'+ val + '":{'
+      $.each(Object.keys(keyDists[val]), (idx2,val2)=>{
+        if (val === val2) { return true }
+        if (str.charAt(str.length-1) !== '{') {
+          str += ','
+        }
+        str += '"'+ val2 + '":{'
+        str += '"steps":' + keyDists[val][val2].steps + ','
+        str += '"doors":['
+        if (keyDists[val][val2].doors.length>0) {
+          str += '"' + keyDists[val][val2].doors.join('","') + '"'
+        }
+        str += ']'
+        str += '}'
+      })
+      str += '}'
+    })
+    str += '}'
+    console.log(str)
+
 
     // continuar: fazer todas permutações e calcular menor caminho
     // depois disso, excluir permutações que não respeitem chave<porta
 
     var genKeyState = function(kst, key) {
-      var newRemainingKeys = kst.remainingKeys.slice()
-      var index = newRemainingKeys.indexOf(key);
-      if (index > -1) {
-        newRemainingKeys.splice(index, 1);
-      }
+      var newRemainingKeys = kst.remainingKeys.replace(key,'')
       var newState = {
         key: key,
-        history: kst.history + key + ',',
+        history: kst.history + key,
         stepSum: kst.stepSum + keyDists[kst.key][key].steps,
         remainingKeys: newRemainingKeys
       }
       return newState
     }
 
-    var totalSteps = 99999999
+    var totalSteps = Number.MAX_SAFE_INTEGER
 
     // initial state is the closes to px, py
     var player = allKeys.shift()
     allKeys.sort().reverse()
-    var initialState = {key:player, history:';'+player+',', stepSum:0, remainingKeys:allKeys.slice()}
+    // TODO: se precisar particionar o processamento, dá pra processar os caminhos alfabeticamente
+    // e separar por letras ou tuplas
+    var initialState = {key:player, history:player, stepSum:0, remainingKeys:allKeys.join('')}
     var nextKeyStates = [initialState]
-    var timeout = 200*1000*1000
+    var timeout = 1*1*1000
+    var ispop = true
     while (nextKeyStates.length > 0 && --timeout) {
+      if (timeout % 10000 === 0) {
+        console.log('checkpoint', nextKeyStates.length, nextKeyStates[0].history, nextKeyStates[0].remainingKeys)
+      }
       // var kst = nextKeyStates.shift()
-      var kst = nextKeyStates.pop()
+      // var kst = nextKeyStates.pop()
+      var kst = ispop ? nextKeyStates.pop() : nextKeyStates.shift()
 
       if (kst.remainingKeys.length === 0) { // all permutations ran
         if (totalSteps > kst.stepSum) {
           totalSteps = kst.stepSum
+          ispop = false
           console.log(kst.stepSum, kst.history)
         }
-      } else if (kst.stepSum < totalSteps) { // genstates
+      } else if (kst.stepSum < totalSteps) { // genstates only if can be shorter
         var generated = []
 
-        kst.remainingKeys.sort((a,b)=>{
-          return keyDists[kst.key][b].steps - keyDists[kst.key][a].steps
+        var arrRemKeys = kst.remainingKeys.split('')
+        arrRemKeys.sort((a,b)=>{
+          return keyDists[kst.key][a].steps - keyDists[kst.key][b].steps
         })
-        $.each(kst.remainingKeys, (idx, key) => {
+        var shortestDist = keyDists[kst.key][arrRemKeys[0]].steps
+        //TODO: testing only the 4 shortest paths
+        var forlimit = arrRemKeys.length// < 4 ? arrRemKeys.length : 4
+        for (var rk = 0; rk < forlimit; rk++) {
+          var key = arrRemKeys[rk]
+          if (keyDists[kst.key][key] > shortestDist) {
+            break;
+          }
+          var validState = true
           var nextKeyState = genKeyState(kst, key)
           // check if has doors in the way
           if (keyDists[kst.key][key].doors.length > 0) {
@@ -225,19 +263,20 @@ var part1 = function() {
             var doorsInTheWay = keyDists[kst.key][key].doors.filter((x)=>{
               return kst.remainingKeys.includes(x.toLowerCase())
             })
-            if (doorsInTheWay.length <= 0) {
-              generated.push(nextKeyState)
+            if (doorsInTheWay.length > 0) {
+              validState = false
             }
-          } else { // no doors in the way
+          }
+          validstate = nextKeyState.stepSum < totalSteps
+          if (validState) {
             generated.push(nextKeyState)
           }
-        })
-
+        }
         nextKeyStates.push(...generated)
       }
     }
     if (timeout <= 0) {
-      console.log('timeout!', nextKeyStates.length, nextKeyStates[0].remainingKeys)
+      console.log('timeout!', nextKeyStates.length, nextKeyStates[0].history, nextKeyStates[0].remainingKeys)
     }
 
     // printGrid(grid, minX, maxX, minY, maxY)
