@@ -132,7 +132,6 @@ var part1 = function() {
     // grid extracted to global
     // printGrid(grid, minX, maxX, minY, maxY)
 
-
     var comInputlist = []
     for (var y = 0; y < height; y++) {
       for (var x = 0; x < width; x++) {
@@ -174,7 +173,7 @@ var part1 = function() {
       }
 
     }
-    printGrid(grid, minX, maxX, minY, maxY)
+    // printGrid(grid, minX, maxX, minY, maxY)
 
     // count #
     var result = grid.reduce((accy,valy) => {
@@ -193,9 +192,97 @@ var part1 = function() {
 var part2 = function () {
 
   for (var i = 0; i < input.length; i++) {
-    var result = ''
+    var numbers = input[i].split(/\,+/)
+
+    // reset grid to part 2 size
+    height = 1200
+    width = 1200
+    for (var x = 0; x < width; x++) {
+      grid[x] = []
+      for (var y = 0; y < height; y++) {
+        grid[x][y] = '_'
+      }
+    }
+    maxX = width-1
+    maxY = height-1
 
     // printGrid(grid, minX, maxX, minY, maxY)
+
+    var comInputlist = []
+    for (var x = 0; x < width; x++) {
+      for (var y = x+(Math.floor(x/7)); y < (Math.ceil(x*1.5)); y++) {
+        comInputlist.push(x)
+        comInputlist.push(y)
+      }
+    }
+
+    while (comInputlist.length > 0) {
+
+      var com = new Computer()
+      com.ints = $.map(numbers, (val => {return Number(val)}))
+
+      var inA = comInputlist.shift()
+      var inB = comInputlist.shift()
+      var comInput = inA
+      var rx = 0
+      var ry = 0
+      var outputs = []
+      var limit = 100000
+      while (!com.halted && --limit>0) {
+        if (com.waitingInput) {
+          com.processInput(comInput)
+          comInput = inB
+          // console.log('input expected')
+        }
+        com.execute()
+        if (com.outputReady) {
+          outputs.push(com.readOutput())
+        }
+      }
+      if (limit <= 0) {
+        console.log('limit reached')
+      }
+      if (outputs.length >= 1) {
+        var status = outputs.shift()
+        grid[inA][inB] = status === 0 ? '.' : '#'
+        // console.log(outputs)
+      }
+
+    }
+
+    var squareSide = 100-1
+    var cutoff = 500
+
+    var targetX = -1
+    var targetY = -1
+    for (var x = cutoff; x < width-squareSide; x++) {
+      for (var y = x+(Math.floor(x/7)); y < (Math.ceil(x*1.5)); y++) {
+        if (grid[x][y] === '#') {
+          if (grid[x+squareSide][y] === '#') {
+            if (grid[x][y+squareSide] === '#') {
+              targetX = x
+              targetY = y
+              break;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+      if (targetX > 0) {
+        break;
+      }
+    }
+
+    //point's X coordinate, multiply it by 10000, then add the point's Y coordinate
+    // console.log(targetX, targetY)
+    // console.log((targetX + squareSide), targetY + squareSide)
+    grid[targetX][targetY] = 'O'
+    grid[targetX+squareSide][targetY+squareSide] = 'O'
+
+    // printGrid(grid, cutoff, maxX, cutoff, maxY)
+
+    var result = (targetX * 10000) + targetY
 
     $('#part2').append(input[i])
       .append('<br>&emsp;')
